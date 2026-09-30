@@ -1,9 +1,8 @@
 import type { School, SchoolCreate } from "../types/school";
-
-const API_URL = import.meta.env.VITE_API_BASE_URL;
+import { apiFetch } from "./client";
 
 export async function getSchools(): Promise<School[]> {
-  const response = await fetch(`${API_URL}/api/schools/`);
+  const response = await apiFetch("/api/schools/");
 
   if (!response.ok) {
     throw new Error("Failed to fetch schools");
@@ -15,11 +14,8 @@ export async function getSchools(): Promise<School[]> {
 export async function createSchool(
   school: SchoolCreate
 ): Promise<School> {
-  const response = await fetch(`${API_URL}/api/schools/`, {
+  const response = await apiFetch("/api/schools/", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
     body: JSON.stringify(school),
   });
 

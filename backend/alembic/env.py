@@ -23,6 +23,7 @@ from app.core.database import Base
 from app.models.products import Product
 from app.models.Schools import School
 from app.models.sale import Sale
+from app.models.Users import User
 
 target_metadata = Base.metadata
 # Base.metadata
