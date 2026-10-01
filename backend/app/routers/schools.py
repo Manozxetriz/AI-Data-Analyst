@@ -2,13 +2,15 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import get_current_user
 from app.models.Schools import School
 from app.Schemas.schools import SchoolCreate, SchoolResponse
 
 
 router = APIRouter(
     prefix="/api/schools",
-    tags=["Schools"]
+    tags=["Schools"],
+    dependencies=[Depends(get_current_user)]
 )
 
 
