@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 from decimal import Decimal
+
+from pydantic import BaseModel
 
 
 class ProductBase(BaseModel):
@@ -10,6 +11,12 @@ class ProductBase(BaseModel):
 
 class ProductCreate(ProductBase):
     pass
+
+
+class ProductUpdate(BaseModel):
+    name: str | None = None
+    cost_price: Decimal | None = None
+    selling_price: Decimal | None = None
 
 
 class ProductResponse(ProductBase):

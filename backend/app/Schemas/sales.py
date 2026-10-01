@@ -16,6 +16,14 @@ class SaleCreate(SaleBase):
     pass
 
 
+class SaleUpdate(BaseModel):
+    bill_no: str | None = None
+    sale_date: date | None = None
+    school_id: int | None = None
+    product_id: int | None = None
+    sales_price: Decimal | None = None
+
+
 class SaleResponse(SaleBase):
     id: int
 
