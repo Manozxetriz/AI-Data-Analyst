@@ -9,7 +9,8 @@ import type { Sale } from "../types/sale";
 import type { School } from "../types/school";
 import type { Product } from "../types/product";
 import type { PageId } from "../types.ts";
-
+import { RevenueBySchoolChart } from "../components/charts/RevenueBySchoolChart";
+import { RevenueByDateChart } from "../components/charts/RevenueByDateChart";
 import {
   DollarSign,
   GraduationCap,
@@ -255,7 +256,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
         />
 
       </div>
+          {/* Analytics Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
+          <RevenueByDateChart
+            sales={sales}
+            isLoading={isLoading}
+          />
+
+          <RevenueBySchoolChart
+            sales={sales}
+            isLoading={isLoading}
+          />
+
+        </div>
       {/* Recent Sales */}
       <div>
         <DataTable
