@@ -29,3 +29,37 @@ export async function createSchool(
 
   return response.json();
 }
+
+export async function updateSchool(
+  id: number,
+  school: SchoolCreate
+): Promise<School> {
+  const response = await apiFetch(`/api/schools/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(school),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+
+    throw new Error(
+      error.detail || "Failed to update school"
+    );
+  }
+
+  return response.json();
+}
+
+export async function deleteSchool(id: number): Promise<void> {
+  const response = await apiFetch(`/api/schools/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+
+    throw new Error(
+      error.detail || "Failed to delete school"
+    );
+  }
+}
