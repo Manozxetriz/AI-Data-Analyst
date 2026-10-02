@@ -294,131 +294,33 @@ export default function App() {
 
           <div className="mx-auto max-w-7xl">
 
-            {/* DASHBOARD */}
-
-            {/* DASHBOARD */}
+           {/* DASHBOARD */}
 
             {currentPage === "dashboard" && (
-
-            <Dashboard
-            onNavigate={(page) => {
-              setCurrentPage(page);
-              setSearchQuery("");
-            }}
-
-            onLogout={handleLogout}
-
-            searchQuery={searchQuery}
-
-            transactions={transactions}
-
-            agentRuns={agentRuns}
-
-            insights={insights}
-
-            chartData={chartData}
-
-            isLoading={isLoading}
-          />
-
-        )}
+              <Dashboard
+                onNavigate={(page) => {
+                  setCurrentPage(page);
+                  setSearchQuery("");
+                }}
+                onLogout={handleLogout}
+                searchQuery={searchQuery}
+              />
+            )}
 
             {/* SALES */}
 
             {currentPage === "sales" && (
-
-              <Sales
-                searchQuery={searchQuery}
-
-                transactions={transactions}
-
-                onExportCSV={
-                  handleExportCSV
-                }
-
-                onCreateOrder={(order) => {
-
-                  const newTx:
-                    SalesTransaction = {
-
-                    ...order,
-
-                    id:
-                      `tx-${Date.now()}`,
-
-                    orderNumber:
-                      `ORD-${Date.now()
-                        .toString()
-                        .slice(-4)}`,
-
-                    date:
-                      new Date()
-                        .toISOString()
-                        .split("T")[0],
-                  };
-
-                  setTransactions([
-                    newTx,
-                    ...transactions,
-                  ]);
-                }}
-
-                isLoading={isLoading}
-              />
-
+            <Sales
+              searchQuery={searchQuery}
+            />
             )}
 
             {/* PRODUCTS */}
 
             {currentPage === "products" && (
-
               <Products
                 searchQuery={searchQuery}
-
-                products={products}
-
-                onAddProduct={(item) => {
-
-                  const newProd:
-                    ProductItem = {
-
-                    ...item,
-
-                    id:
-                      `prod-${Date.now()}`,
-
-                    lastQualityAudit:
-                      new Date()
-                        .toISOString()
-                        .split("T")[0],
-                  };
-
-                  setProducts([
-                    newProd,
-                    ...products,
-                  ]);
-                }}
-
-                onUpdateProductStock={
-                  (id, newStock) => {
-
-                    setProducts(
-                      products.map((p) =>
-                        p.id === id
-                          ? {
-                              ...p,
-                              stockLevel:
-                                newStock,
-                            }
-                          : p
-                      )
-                    );
-                  }
-                }
-
-                isLoading={isLoading}
               />
-
             )}
 
             {/* SCHOOLS */}

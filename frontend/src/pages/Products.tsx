@@ -240,7 +240,7 @@ export const Products: React.FC<ProductsProps> = ({
           </h1>
 
           <p className="text-xs text-slate-500">
-            Products loaded from the backend API
+            You can add, edit, or delete products as needed.
           </p>
         </div>
 

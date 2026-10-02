@@ -14,8 +14,19 @@ export async function apiFetch(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  return fetch(`${API_URL}${endpoint}`, {
+  const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers,
   });
+
+  // JWT expired, remove token and redirect to login page
+  if (response.status === 401) {
+    localStorage.removeItem("access_token");
+
+    window.location.href = "/login";
+
+    throw new Error("Session expired. Please login again.");
+  }
+
+  return response;
 }

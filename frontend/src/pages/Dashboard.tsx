@@ -1,147 +1,161 @@
-import React, { useState } from 'react';
-import { StatCard } from '../components/StatCard.tsx';
-import { SalesChart } from '../components/SalesChart.tsx';
-import { DataTable, type ColumnDef } from '../components/DataTable.tsx';
-import type {
-  SalesTransaction,
-  AgentRun,
-  AIAnalysisInsight,
-  ChartDataPoint,
-  PageId,
-} from '../types.ts';
+import React, { useEffect, useState } from "react";
+import { StatCard } from "../components/StatCard.tsx";
+import { DataTable, type ColumnDef } from "../components/DataTable.tsx";
+import { getSales } from "../api/sales";
+import { getSchools } from "../api/schools";
+import { getProducts } from "../api/products";
+
+import type { Sale } from "../types/sale";
+import type { School } from "../types/school";
+import type { Product } from "../types/product";
+import type { PageId } from "../types.ts";
+
 import {
   DollarSign,
   GraduationCap,
-  Activity,
-  Bot,
+  Package,
+  Receipt,
   ArrowRight,
-  ShieldCheck,
-  FileCheck,
-  Inbox,
   LogOut,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface DashboardProps {
   onNavigate: (page: PageId) => void;
   onLogout: () => void;
   searchQuery?: string;
-  transactions?: SalesTransaction[];
-  agentRuns?: AgentRun[];
-  insights?: AIAnalysisInsight[];
-  chartData?: ChartDataPoint[];
-  isLoading?: boolean;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
   onNavigate,
   onLogout,
-  searchQuery = '',
-  transactions = [],
-  agentRuns = [],
-  insights = [],
-  chartData = [],
-  isLoading = false,
+  searchQuery = "",
 }) => {
-  const [selectedTransaction, setSelectedTransaction] =
-    useState<SalesTransaction | null>(null);
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [schools, setSchools] = useState<School[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
 
-  const columns: ColumnDef<SalesTransaction>[] = [
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const [salesData, schoolsData, productsData] =
+          await Promise.all([
+            getSales(),
+            getSchools(),
+            getProducts(),
+          ]);
+
+        setSales(salesData);
+        setSchools(schoolsData);
+        setProducts(productsData);
+      } catch (err) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Failed to load dashboard data");
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDashboardData();
+  }, []);
+
+  const totalRevenue = sales.reduce(
+    (total, sale) => total + Number(sale.sales_price),
+    0
+  );
+
+  const totalTransactions = sales.length;
+  const totalSchools = schools.length;
+  const totalProducts = products.length;
+
+  const columns: ColumnDef<Sale>[] = [
     {
-      key: 'orderNumber',
-      header: 'Order Reference',
+      key: "id",
+      header: "ID",
       sortable: true,
-      accessor: (tx) => (
-        <span className="font-mono text-slate-900 font-medium">
-          {tx.orderNumber}
+      accessor: (sale) => (
+        <span className="font-mono text-slate-900">
+          {sale.id}
         </span>
       ),
     },
     {
-      key: 'institutionName',
-      header: 'Institution / District',
+      key: "bill_no",
+      header: "Bill No",
       sortable: true,
-      accessor: (tx) => (
-        <div>
-          <div className="font-medium text-slate-900 truncate max-w-xs">
-            {tx.institutionName}
-          </div>
-          <div className="text-[11px] font-mono text-slate-400">
-            {tx.districtCode}
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: 'category',
-      header: 'Contract Scope',
-      sortable: true,
-      accessor: (tx) => (
-        <span className="text-slate-600">
-          {tx.category}
+      accessor: (sale) => (
+        <span className="font-medium text-slate-900">
+          {sale.bill_no}
         </span>
       ),
     },
     {
-      key: 'amount',
-      header: 'Settlement Amount',
+      key: "sale_date",
+      header: "Sale Date",
       sortable: true,
-      align: 'right',
-      accessor: (tx) => (
-        <span className="font-mono tabular-nums font-medium text-slate-900">
-          ${tx.amount.toLocaleString()}
+      accessor: (sale) => (
+        <span className="font-mono text-slate-700">
+          {sale.sale_date}
         </span>
       ),
     },
     {
-      key: 'status',
-      header: 'Audit Status',
+      key: "school_id",
+      header: "School ID",
       sortable: true,
-      accessor: (tx) => {
-        const isSettled = tx.status === 'Settled';
-        const isFlagged = tx.status === 'Flagged Audit';
-
-        return (
-          <div className="flex items-center gap-1.5 text-xs">
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${
-                isSettled
-                  ? 'bg-emerald-500'
-                  : isFlagged
-                  ? 'bg-rose-500'
-                  : 'bg-amber-500'
-              }`}
-            />
-
-            <span
-              className={`font-medium ${
-                isSettled
-                  ? 'text-slate-700'
-                  : isFlagged
-                  ? 'text-rose-700'
-                  : 'text-amber-700'
-              }`}
-            >
-              {tx.status}
-            </span>
-          </div>
-        );
-      },
+      accessor: (sale) => (
+        <span className="font-mono text-slate-700">
+          {sale.school_id}
+        </span>
+      ),
+    },
+    {
+      key: "product_id",
+      header: "Product ID",
+      sortable: true,
+      accessor: (sale) => (
+        <span className="font-mono text-slate-700">
+          {sale.product_id}
+        </span>
+      ),
+    },
+    {
+      key: "sales_price",
+      header: "Sales Price",
+      sortable: true,
+      align: "right",
+      accessor: (sale) => (
+        <span className="font-mono font-medium text-slate-900">
+          {Number(sale.sales_price).toFixed(2)}
+        </span>
+      ),
     },
   ];
 
-  const totalRevenue = transactions.reduce(
-    (acc, tx) => acc + (tx.amount || 0),
-    0
-  );
+  const query = searchQuery.toLowerCase();
 
-  const totalUnits = transactions.reduce(
-    (acc, tx) => acc + (tx.itemsCount || 0),
-    0
-  );
+  const filteredSales = sales.filter((sale) => {
+    if (!query) {
+      return true;
+    }
 
-  const activeAgentCount = agentRuns.filter(
-    (r) => r.executionStatus === 'Running'
-  ).length;
+    return (
+      sale.bill_no.toLowerCase().includes(query) ||
+      sale.id.toString().includes(query) ||
+      sale.school_id.toString().includes(query) ||
+      sale.product_id.toString().includes(query)
+    );
+  });
 
   return (
     <div className="space-y-6">
@@ -154,31 +168,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </h1>
 
           <p className="text-xs text-slate-500">
-            Real-time procurement telemetry, FERPA seat distribution, and autonomous validation
+            Real-time sales, school, and product data from the backend.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
 
-          {/* Review AI Briefing */}
           <button
-            onClick={() => onNavigate('ai-analyst')}
+            onClick={() => onNavigate("sales")}
             className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
           >
-            <span>Review AI Briefing</span>
+            <span>View Sales</span>
             <ArrowRight className="h-3 w-3 text-slate-400" />
           </button>
 
-          {/* Launch Agent Run */}
-          <button
-            onClick={() => onNavigate('agent-runs')}
-            className="flex items-center gap-1.5 rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 transition-colors"
-          >
-            <Bot className="h-3.5 w-3.5" />
-            <span>Launch Agent Run</span>
-          </button>
-
-          {/* Logout */}
           <button
             onClick={onLogout}
             className="flex items-center gap-1.5 rounded-md border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors"
@@ -190,271 +193,221 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* Primary KPI Grid */}
+      {/* Error */}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
         <StatCard
-          title="Consolidated Revenue"
-          value={
-            totalRevenue > 0
-              ? `$${totalRevenue.toLocaleString()}`
-              : '$0.00'
-          }
-          change={
-            transactions.length > 0
-              ? `${transactions.length} orders`
-              : 'No orders'
-          }
+          title="Total Revenue"
+          value={`$${totalRevenue.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`}
+          change={`${totalTransactions} transactions`}
           changeType="neutral"
           period="from backend"
-          secondaryLabel="Ledger Count"
-          secondaryValue={transactions.length.toString()}
+          secondaryLabel="Transactions"
+          secondaryValue={totalTransactions.toString()}
           icon={DollarSign}
-          onClick={() => onNavigate('sales')}
+          onClick={() => onNavigate("sales")}
         />
 
         <StatCard
-          title="Contracting Districts"
-          value={
-            transactions.length > 0
-              ? `${new Set(
-                  transactions.map((t) => t.districtCode)
-                ).size} Active`
-              : '0 Active'
-          }
-          change="Real-time"
+          title="Schools"
+          value={`${totalSchools}`}
+          change="Active records"
           changeType="neutral"
-          period="connected API"
-          secondaryLabel="Units"
-          secondaryValue={totalUnits.toString()}
+          period="from backend"
+          secondaryLabel="Schools"
+          secondaryValue={totalSchools.toString()}
           icon={GraduationCap}
-          onClick={() => onNavigate('schools')}
+          onClick={() => onNavigate("schools")}
         />
 
         <StatCard
-          title="Assessment Batteries"
-          value={
-            totalUnits > 0
-              ? `${totalUnits.toLocaleString()} Units`
-              : '0 Units'
-          }
-          change="0 Par Breaches"
+          title="Products"
+          value={`${totalProducts}`}
+          change="Catalog records"
           changeType="neutral"
-          period="inventory sync"
-          secondaryLabel="State"
-          secondaryValue="Nominal"
-          icon={Activity}
-          onClick={() => onNavigate('products')}
+          period="from backend"
+          secondaryLabel="Products"
+          secondaryValue={totalProducts.toString()}
+          icon={Package}
+          onClick={() => onNavigate("products")}
         />
 
         <StatCard
-          title="Autonomous Invariants"
-          value={`${activeAgentCount} Running`}
-          change={`${agentRuns.length} Total`}
+          title="Sales Records"
+          value={`${totalTransactions}`}
+          change="Database records"
           changeType="neutral"
-          period="scheduler"
-          secondaryLabel="Active Agents"
-          secondaryValue={`${activeAgentCount} Jobs`}
-          icon={Bot}
-          onClick={() => onNavigate('agent-runs')}
+          period="from backend"
+          secondaryLabel="Records"
+          secondaryValue={totalTransactions.toString()}
+          icon={Receipt}
+          onClick={() => onNavigate("sales")}
         />
 
       </div>
 
-      {/* Main Visual Anchor: Sales Chart */}
+      {/* Recent Sales */}
       <div>
-        <SalesChart
-          data={chartData}
-          initialRange="30D"
+        <DataTable
+          title="Recent Sales Transactions"
+          subtitle={`Showing ${filteredSales.length} sales from backend`}
+          data={filteredSales}
+          columns={columns}
+          keyExtractor={(sale) => sale.id.toString()}
+          pageSize={5}
           isLoading={isLoading}
+          emptyMessage="No sales found in backend."
+          externalSearchQuery={searchQuery}
+          onRowClick={(sale) => setSelectedSale(sale)}
         />
       </div>
 
-      {/* Dual Split: Recent Transactions & Intelligence Highlights */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Schools and Products */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* Recent Transactions */}
-        <div className="lg:col-span-2 space-y-4">
-          <DataTable
-            title="Recent District Procurement Transactions"
-            subtitle="Encumbered purchase orders reconciled against FERPA seat limits"
-            data={transactions}
-            columns={columns}
-            keyExtractor={(item) => item.id}
-            pageSize={5}
-            isLoading={isLoading}
-            emptyMessage="No transactions loaded from backend."
-            externalSearchQuery={searchQuery}
-            onRowClick={(item) => setSelectedTransaction(item)}
-            searchFilter={(item, q) =>
-              item.orderNumber.toLowerCase().includes(q) ||
-              item.institutionName.toLowerCase().includes(q) ||
-              item.districtCode.toLowerCase().includes(q) ||
-              item.category.toLowerCase().includes(q)
-            }
-          />
-        </div>
+        {/* Schools */}
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
 
-        {/* Right Side */}
-        <div className="space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
 
-          {/* Analyst Insights */}
-          <div className="rounded-lg border border-slate-200 bg-white p-5">
+            <div className="flex items-center gap-2">
+              <GraduationCap className="h-4 w-4 text-slate-800" />
 
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-slate-800" />
-
-                <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
-                  Analyst Invariants
-                </h3>
-              </div>
-
-              <button
-                onClick={() => onNavigate('ai-analyst')}
-                className="text-xs text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-1"
-              >
-                <span>Full Lab</span>
-                <ArrowRight className="h-3 w-3" />
-              </button>
-
+              <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
+                Schools
+              </h3>
             </div>
 
-            <div className="mt-4 space-y-3.5">
+            <button
+              onClick={() => onNavigate("schools")}
+              className="text-xs text-slate-500 hover:text-slate-900 flex items-center gap-1"
+            >
+              View All
+              <ArrowRight className="h-3 w-3" />
+            </button>
 
-              {insights.length === 0 ? (
-                <div className="py-6 text-center text-xs text-slate-400">
-                  <Inbox className="h-4 w-4 mx-auto mb-1 opacity-50" />
-                  No analyst insights received from backend.
-                </div>
-              ) : (
-                insights.slice(0, 2).map((ins) => (
-                  <div
-                    key={ins.id}
-                    onClick={() => onNavigate('ai-analyst')}
-                    className="group cursor-pointer rounded-md border border-slate-100 p-3 hover:border-slate-300 hover:bg-slate-50/50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-
-                      <span className="text-xs font-medium text-slate-900 group-hover:text-slate-950">
-                        {ins.headline}
-                      </span>
-
-                      <span className="font-mono text-[11px] text-slate-400 tabular-nums">
-                        {ins.confidenceScore}% conf
-                      </span>
-
-                    </div>
-
-                    <p className="mt-1 text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
-                      {ins.summary}
-                    </p>
-
-                    <div className="mt-2.5 flex items-center gap-2 text-[11px] text-slate-400">
-
-                      <span>{ins.category}</span>
-
-                      <span aria-hidden="true">·</span>
-
-                      <span className="font-mono font-medium text-slate-700">
-                        {ins.impactMetric.label}: {ins.impactMetric.value}
-                      </span>
-
-                    </div>
-                  </div>
-                ))
-              )}
-
-            </div>
           </div>
 
-          {/* Running Agents Telemetry Feed */}
-          <div className="rounded-lg border border-slate-200 bg-white p-5">
+          <div className="mt-4">
 
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            {isLoading ? (
+              <p className="text-xs text-slate-400">
+                Loading schools...
+              </p>
+            ) : schools.length === 0 ? (
+              <p className="text-xs text-slate-400">
+                No schools found.
+              </p>
+            ) : (
+              <div className="space-y-3">
 
-              <div className="flex items-center gap-2">
-                <Bot className="h-4 w-4 text-slate-800" />
-
-                <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
-                  Active Execution Traces
-                </h3>
-              </div>
-
-              <button
-                onClick={() => onNavigate('agent-runs')}
-                className="text-xs text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-1"
-              >
-                <span>Telemetry</span>
-                <ArrowRight className="h-3 w-3" />
-              </button>
-
-            </div>
-
-            <div className="mt-4 space-y-3">
-
-              {agentRuns.length === 0 ? (
-                <div className="py-6 text-center text-xs text-slate-400">
-                  <Bot className="h-4 w-4 mx-auto mb-1 opacity-50" />
-                  No agent runs loaded from backend.
-                </div>
-              ) : (
-                agentRuns.slice(0, 3).map((run) => (
+                {schools.slice(0, 5).map((school) => (
                   <div
-                    key={run.id}
-                    onClick={() => onNavigate('agent-runs')}
-                    className="cursor-pointer border-b border-slate-100 pb-3 last:border-b-0 last:pb-0"
+                    key={school.id}
+                    className="flex items-center justify-between border-b border-slate-100 pb-2 last:border-0"
                   >
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        {school.name}
+                      </p>
 
-                    <div className="flex items-center justify-between text-xs">
-
-                      <span className="font-medium text-slate-900 truncate max-w-[170px]">
-                        {run.agentName}
-                      </span>
-
-                      <span
-                        className={`font-mono text-[10px] tabular-nums ${
-                          run.executionStatus === 'Completed'
-                            ? 'text-emerald-700'
-                            : run.executionStatus === 'Action Flagged'
-                            ? 'text-rose-700'
-                            : 'text-amber-700'
-                        }`}
-                      >
-                        {run.executionStatus}
-                      </span>
-
+                      {school.address && (
+                        <p className="text-[11px] text-slate-400">
+                          {school.address}
+                        </p>
+                      )}
                     </div>
 
-                    <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-400 font-mono">
-
-                      <span>{run.agentIdentifier}</span>
-
-                      <span aria-hidden="true">·</span>
-
-                      <span>
-                        {run.recordsEvaluated.toLocaleString()} records
-                      </span>
-
-                      <span aria-hidden="true">·</span>
-
-                      <span>{run.durationSeconds}s</span>
-
-                    </div>
-
+                    <span className="font-mono text-xs text-slate-400">
+                      #{school.id}
+                    </span>
                   </div>
-                ))
-              )}
+                ))}
 
+              </div>
+            )}
+
+          </div>
+        </div>
+
+        {/* Products */}
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
+
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+
+            <div className="flex items-center gap-2">
+              <Package className="h-4 w-4 text-slate-800" />
+
+              <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
+                Products
+              </h3>
             </div>
+
+            <button
+              onClick={() => onNavigate("products")}
+              className="text-xs text-slate-500 hover:text-slate-900 flex items-center gap-1"
+            >
+              View All
+              <ArrowRight className="h-3 w-3" />
+            </button>
+
           </div>
 
+          <div className="mt-4">
+
+            {isLoading ? (
+              <p className="text-xs text-slate-400">
+                Loading products...
+              </p>
+            ) : products.length === 0 ? (
+              <p className="text-xs text-slate-400">
+                No products found.
+              </p>
+            ) : (
+              <div className="space-y-3">
+
+                {products.slice(0, 5).map((product) => (
+                  <div
+                    key={product.id}
+                    className="flex items-center justify-between border-b border-slate-100 pb-2 last:border-0"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        {product.name}
+                      </p>
+
+                      <p className="text-[11px] text-slate-400">
+                        Selling Price:{" "}
+                        {Number(product.selling_price).toFixed(2)}
+                      </p>
+                    </div>
+
+                    <span className="font-mono text-xs text-slate-400">
+                      #{product.id}
+                    </span>
+                  </div>
+                ))}
+
+              </div>
+            )}
+
+          </div>
         </div>
+
       </div>
 
-      {/* Transaction Detail Modal */}
-      {selectedTransaction && (
+      {/* Sale Detail Modal */}
+      {selectedSale && (
         <div
           role="dialog"
           aria-modal="true"
@@ -466,19 +419,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               <div>
                 <span className="font-mono text-xs text-slate-400">
-                  {selectedTransaction.orderNumber}
+                  Sale #{selectedSale.id}
                 </span>
 
                 <h3 className="text-base font-semibold text-slate-900 mt-0.5">
-                  {selectedTransaction.institutionName}
+                  Bill #{selectedSale.bill_no}
                 </h3>
               </div>
 
               <button
-                onClick={() => setSelectedTransaction(null)}
+                onClick={() => setSelectedSale(null)}
                 className="text-xs text-slate-400 hover:text-slate-700 rounded p-1"
               >
-                Close (ESC)
+                Close
               </button>
 
             </div>
@@ -487,81 +440,58 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               <div>
                 <span className="text-slate-400">
-                  District Code
+                  Sale Date
                 </span>
 
                 <p className="font-mono font-medium text-slate-800 mt-0.5">
-                  {selectedTransaction.districtCode}
+                  {selectedSale.sale_date}
                 </p>
               </div>
 
               <div>
                 <span className="text-slate-400">
-                  Settlement Date
-                </span>
-
-                <p className="font-mono text-slate-800 mt-0.5">
-                  {selectedTransaction.date}
-                </p>
-              </div>
-
-              <div>
-                <span className="text-slate-400">
-                  Contract Scope
-                </span>
-
-                <p className="font-medium text-slate-800 mt-0.5">
-                  {selectedTransaction.category}
-                </p>
-              </div>
-
-              <div>
-                <span className="text-slate-400">
-                  Payment Terms
-                </span>
-
-                <p className="font-medium text-slate-800 mt-0.5">
-                  {selectedTransaction.paymentTerms}
-                </p>
-              </div>
-
-              <div>
-                <span className="text-slate-400">
-                  Assessment Units
+                  School ID
                 </span>
 
                 <p className="font-mono font-medium text-slate-800 mt-0.5">
-                  {selectedTransaction.itemsCount} units
+                  {selectedSale.school_id}
                 </p>
               </div>
 
               <div>
                 <span className="text-slate-400">
-                  Total Encumbrance
+                  Product ID
+                </span>
+
+                <p className="font-mono font-medium text-slate-800 mt-0.5">
+                  {selectedSale.product_id}
+                </p>
+              </div>
+
+              <div>
+                <span className="text-slate-400">
+                  Sales Price
                 </span>
 
                 <p className="font-mono text-base font-semibold text-slate-900 mt-0.5">
-                  ${selectedTransaction.amount.toLocaleString()}
+                  {Number(selectedSale.sales_price).toFixed(2)}
                 </p>
               </div>
 
             </div>
 
-            <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4 text-xs">
+            <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
 
-              <span className="text-slate-400 flex items-center gap-1.5">
-
-                <FileCheck className="h-4 w-4 text-emerald-600" />
-
-                Ledger cryptographically sealed
-
+              <span className="text-xs text-slate-400 flex items-center gap-1.5">
+                <Receipt className="h-4 w-4 text-emerald-600" />
+                Loaded from backend
               </span>
 
               <button
-                onClick={() => setSelectedTransaction(null)}
+                onClick={() => setSelectedSale(null)}
                 className="rounded-md bg-slate-900 px-4 py-2 text-xs font-medium text-white hover:bg-slate-800 transition-colors"
               >
-                Acknowledge Receipt
+                Close
               </button>
 
             </div>
