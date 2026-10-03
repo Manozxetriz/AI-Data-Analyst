@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import type { School, SchoolCreate } from "../types/school";
 import {
   getSchools,
@@ -6,12 +6,14 @@ import {
   updateSchool,
   deleteSchool,
 } from "../api/schools";
+import { DataTable, type ColumnDef } from "../components/DataTable.tsx";
 
 /* ---------- Icons ---------- */
-const Icon: React.FC<{ className?: string; children: React.ReactNode }> = ({
-  className = "h-4 w-4",
-  children,
-}) => (
+
+const Icon: React.FC<{
+  className?: string;
+  children: React.ReactNode;
+}> = ({ className = "h-4 w-4", children }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -48,20 +50,8 @@ const PulseIcon: React.FC<{ className?: string }> = ({ className }) => (
   </Icon>
 );
 
-const FilterIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <Icon className={className}>
-    <path d="M3 5h18l-7 8v6l-4-2v-4L3 5Z" />
-  </Icon>
-);
-
-const SortIcon: React.FC = () => (
-  <Icon className="h-3 w-3 text-slate-300">
-    <path d="m8 9 4-4 4 4" />
-    <path d="m8 15 4 4 4-4" />
-  </Icon>
-);
-
 /* ---------- Small building blocks ---------- */
+
 const StatCard: React.FC<{
   label: string;
   value: string;
@@ -81,25 +71,15 @@ const StatCard: React.FC<{
 
     <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[11px]">
       <span className="font-mono text-slate-600">{foot}</span>
-      {footRight && <span className="text-slate-400">{footRight}</span>}
+
+      {footRight && (
+        <span className="text-slate-400">{footRight}</span>
+      )}
     </div>
   </div>
 );
 
-const SkeletonRow: React.FC = () => (
-  <tr className="border-t border-slate-100">
-    <td className="px-5 py-4">
-      <div className="h-3 w-12 animate-pulse rounded bg-slate-100" />
-    </td>
-    <td className="px-5 py-4">
-      <div className="h-3 w-40 animate-pulse rounded bg-slate-100" />
-    </td>
-    <td className="px-5 py-4">
-      <div className="h-3 w-56 animate-pulse rounded bg-slate-100" />
-    </td>
-    <td className="px-5 py-4" />
-  </tr>
-);
+/* ---------- Button styles ---------- */
 
 const outlineBtn =
   "inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50";
@@ -114,23 +94,30 @@ const inputCls =
   "w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-100";
 
 /* ---------- Page ---------- */
+
 export const Schools: React.FC = () => {
   const [schools, setSchools] = useState<School[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [query, setQuery] = useState("");
 
   const [showModal, setShowModal] = useState(false);
   const [editingSchool, setEditingSchool] = useState<School | null>(null);
-  const [form, setForm] = useState<SchoolCreate>({ name: "", address: "" });
+
+  const [form, setForm] = useState<SchoolCreate>({
+    name: "",
+    address: "",
+  });
 
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  /* ---------- Load Schools ---------- */
 
   const loadSchools = async () => {
     try {
       setLoading(true);
       setError("");
+
       const data = await getSchools();
       setSchools(data);
     } catch (err) {
@@ -145,41 +132,55 @@ export const Schools: React.FC = () => {
     loadSchools();
   }, []);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return schools;
-    return schools.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        (s.address || "").toLowerCase().includes(q) ||
-        String(s.id).includes(q)
-    );
-  }, [schools, query]);
+  /* ---------- Stats ---------- */
 
-  const withAddress = schools.filter((s) => s.address?.trim()).length;
+  const withAddress = schools.filter(
+    (school) => school.address?.trim()
+  ).length;
+
   const missingAddress = schools.length - withAddress;
+
+  /* ---------- Modal ---------- */
 
   const openAddModal = () => {
     setEditingSchool(null);
-    setForm({ name: "", address: "" });
+
+    setForm({
+      name: "",
+      address: "",
+    });
+
     setShowModal(true);
   };
 
   const openEditModal = (school: School) => {
     setEditingSchool(school);
-    setForm({ name: school.name, address: school.address || "" });
+
+    setForm({
+      name: school.name,
+      address: school.address || "",
+    });
+
     setShowModal(true);
   };
 
   const closeModal = () => {
     if (saving) return;
+
     setShowModal(false);
     setEditingSchool(null);
-    setForm({ name: "", address: "" });
+
+    setForm({
+      name: "",
+      address: "",
+    });
   };
+
+  /* ---------- Create / Update ---------- */
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+
     if (!form.name.trim()) return;
 
     try {
@@ -187,55 +188,168 @@ export const Schools: React.FC = () => {
       setError("");
 
       if (editingSchool) {
-        const updated = await updateSchool(editingSchool.id, form);
+        const updated = await updateSchool(
+          editingSchool.id,
+          form
+        );
+
         setSchools((current) =>
-          current.map((s) => (s.id === updated.id ? updated : s))
+          current.map((school) =>
+            school.id === updated.id ? updated : school
+          )
         );
       } else {
         const created = await createSchool(form);
-        setSchools((current) => [...current, created]);
+
+        setSchools((current) => [
+          ...current,
+          created,
+        ]);
       }
 
       closeModal();
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong."
+      );
     } finally {
       setSaving(false);
     }
   };
 
+  /* ---------- Delete ---------- */
+
   const handleDelete = async (school: School) => {
-    if (!window.confirm(`Are you sure you want to delete "${school.name}"?`)) {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete "${school.name}"?`
+      )
+    ) {
       return;
     }
 
     try {
       setDeletingId(school.id);
       setError("");
+
       await deleteSchool(school.id);
-      setSchools((current) => current.filter((s) => s.id !== school.id));
+
+      setSchools((current) =>
+        current.filter(
+          (item) => item.id !== school.id
+        )
+      );
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : "Failed to delete school.");
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to delete school."
+      );
     } finally {
       setDeletingId(null);
     }
   };
 
-  const th =
-    "px-5 py-3 text-left text-[11px] font-semibold tracking-wide text-slate-700";
+  /* ---------- DataTable Columns ---------- */
+
+  const columns: ColumnDef<School>[] = [
+    {
+      key: "id",
+      header: "School ID",
+      sortable: true,
+      accessor: (school) => (
+        <span className="font-mono text-xs text-slate-500">
+          #{school.id}
+        </span>
+      ),
+    },
+
+    {
+      key: "name",
+      header: "Institution",
+      sortable: true,
+      accessor: (school) => (
+        <div className="flex items-center gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500">
+            <SchoolIcon className="h-4 w-4" />
+          </span>
+
+          <span className="truncate font-medium text-slate-900">
+            {school.name}
+          </span>
+        </div>
+      ),
+    },
+
+    {
+      key: "address",
+      header: "Address",
+      sortable: true,
+      accessor: (school) =>
+        school.address ? (
+          <span className="text-slate-500">
+            {school.address}
+          </span>
+        ) : (
+          <span className="text-slate-400">
+            No address provided
+          </span>
+        ),
+    },
+
+    {
+      key: "actions",
+      header: "Actions",
+      align: "right",
+      accessor: (school) => (
+        <div
+          className="flex justify-end gap-2"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <button
+            type="button"
+            onClick={() => openEditModal(school)}
+            className={outlineBtn}
+          >
+            Edit
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleDelete(school)}
+            disabled={deletingId === school.id}
+            className={dangerBtn}
+          >
+            {deletingId === school.id
+              ? "Deleting..."
+              : "Delete"}
+          </button>
+        </div>
+      ),
+    },
+  ];
+
+  /* ---------- Render ---------- */
 
   return (
     <div className="space-y-6">
       {/* Header */}
+
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">
             Institutional Schools Registry
           </h1>
+
           <p className="text-xs text-slate-500">
-            Manage registered schools, addresses, and institution records.
+            Manage registered schools, addresses, and
+            institution records.
           </p>
         </div>
 
@@ -248,39 +362,71 @@ export const Schools: React.FC = () => {
           >
             Refresh
           </button>
-          <button type="button" onClick={openAddModal} className={darkBtn}>
-            <span className="text-sm leading-none">+</span>
+
+          <button
+            type="button"
+            onClick={openAddModal}
+            className={darkBtn}
+          >
+            <span className="text-sm leading-none">
+              +
+            </span>
+
             Add School
           </button>
         </div>
       </header>
 
-      {/* Stat cards */}
+      {/* Stat Cards */}
+
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
           label="Registered Schools"
-          value={loading ? "—" : String(schools.length)}
+          value={
+            loading
+              ? "—"
+              : String(schools.length)
+          }
           icon={<SchoolIcon />}
           foot={error ? "Error" : "Real-time"}
-          footRight={`Showing: ${filtered.length}`}
+          footRight={`Showing: ${schools.length}`}
         />
+
         <StatCard
           label="Address on File"
-          value={loading ? "—" : `${withAddress} Complete`}
+          value={
+            loading
+              ? "—"
+              : `${withAddress} Complete`
+          }
           icon={<PinIcon />}
           foot={`${missingAddress} Missing`}
           footRight="Address records"
         />
+
         <StatCard
           label="Registry Status"
-          value={error ? "Error" : loading ? "Syncing" : "Online"}
+          value={
+            error
+              ? "Error"
+              : loading
+              ? "Syncing"
+              : "Online"
+          }
           icon={<PulseIcon />}
-          foot={error ? "Request failed" : "Connected API"}
-          footRight={`State: ${error ? "Fault" : "Nominal"}`}
+          foot={
+            error
+              ? "Request failed"
+              : "Connected API"
+          }
+          footRight={`State: ${
+            error ? "Fault" : "Nominal"
+          }`}
         />
       </section>
 
       {/* Error */}
+
       {error && (
         <div
           role="alert"
@@ -290,160 +436,51 @@ export const Schools: React.FC = () => {
         </div>
       )}
 
-      {/* Table panel */}
-      <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-900">
-              Registered School Records
-            </h2>
-            <p className="mt-0.5 text-xs text-slate-500">
-              All institutions currently stored in the system.
-            </p>
-          </div>
+      {/* Schools Table */}
 
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Filter records..."
-            className={`${inputCls} sm:w-72`}
-          />
-        </div>
+      <DataTable
+        title="Registered School Records"
+        subtitle="All institutions currently stored in the system."
+        data={schools}
+        columns={columns}
+        keyExtractor={(school) =>
+          school.id.toString()
+        }
+        pageSize={10}
+        isLoading={loading}
+        emptyMessage="No schools found."
+        searchFilter={(school, searchQuery) => {
+          const query = searchQuery.toLowerCase();
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className={th}>
-                  <span className="inline-flex items-center gap-1.5">
-                    School ID <SortIcon />
-                  </span>
-                </th>
-                <th className={th}>
-                  <span className="inline-flex items-center gap-1.5">
-                    Institution <SortIcon />
-                  </span>
-                </th>
-                <th className={th}>
-                  <span className="inline-flex items-center gap-1.5">
-                    Address <SortIcon />
-                  </span>
-                </th>
-                <th className={`${th} text-right`}>Actions</th>
-              </tr>
-            </thead>
+          return (
+            school.name
+              .toLowerCase()
+              .includes(query) ||
+            (school.address || "")
+              .toLowerCase()
+              .includes(query) ||
+            school.id
+              .toString()
+              .includes(query)
+          );
+        }}
+      />
 
-            <tbody>
-              {loading &&
-                Array.from({ length: 3 }).map((_, i) => (
-                  <SkeletonRow key={i} />
-                ))}
+      {/* Add / Edit Modal */}
 
-              {!loading &&
-                filtered.map((school) => (
-                  <tr
-                    key={school.id}
-                    className="border-t border-slate-100 transition hover:bg-slate-50/70"
-                  >
-                    <td className="px-5 py-3.5 font-mono text-xs text-slate-500">
-                      #{school.id}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500">
-                          <SchoolIcon className="h-4 w-4" />
-                        </span>
-                        <span className="truncate font-medium text-slate-900">
-                          {school.name}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-500">
-                      {school.address || (
-                        <span className="text-slate-400">
-                          No address provided
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(school)}
-                          className={outlineBtn}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(school)}
-                          disabled={deletingId === school.id}
-                          className={dangerBtn}
-                        >
-                          {deletingId === school.id
-                            ? "Deleting..."
-                            : "Delete"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-
-          {/* Empty states */}
-          {!loading && !error && schools.length === 0 && (
-            <div className="border-t border-slate-100 px-6 py-14 text-center">
-              <FilterIcon className="mx-auto h-6 w-6 text-slate-300" />
-              <p className="mt-3 text-sm font-medium text-slate-700">
-                No schools loaded from backend
-              </p>
-              <p className="mt-1 text-xs text-slate-400">
-                Schools you add will show up here.
-              </p>
-              <button
-                type="button"
-                onClick={openAddModal}
-                className={`${darkBtn} mt-5`}
-              >
-                Add First School
-              </button>
-            </div>
-          )}
-
-          {!loading && schools.length > 0 && filtered.length === 0 && (
-            <div className="border-t border-slate-100 px-6 py-14 text-center">
-              <FilterIcon className="mx-auto h-6 w-6 text-slate-300" />
-              <p className="mt-3 text-sm font-medium text-slate-700">
-                No matching records
-              </p>
-              <p className="mt-1 text-xs text-slate-400">
-                Try a different name, address, or ID.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3 text-[11px]">
-          
-          <span className="font-mono text-slate-400">
-            Status: {loading ? "Syncing" : error ? "Fault" : "Connected"}
-          </span>
-        </div>
-      </section>
-
-
-      {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
           <div className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-xl">
+            {/* Modal Header */}
+
             <div className="mb-5 flex items-start justify-between">
               <div>
                 <h2 className="text-base font-semibold text-slate-900">
-                  {editingSchool ? "Edit School" : "Add School"}
+                  {editingSchool
+                    ? "Edit School"
+                    : "Add School"}
                 </h2>
+
                 <p className="mt-0.5 text-xs text-slate-500">
                   {editingSchool
                     ? "Update school information."
@@ -462,35 +499,56 @@ export const Schools: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Form */}
+
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-4"
+            >
+              {/* School Name */}
+
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-slate-700">
                   School Name
                 </label>
+
                 <input
                   type="text"
                   value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      name: event.target.value,
+                    })
+                  }
                   placeholder="Enter school name"
                   className={inputCls}
                   required
                 />
               </div>
 
+              {/* Address */}
+
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-slate-700">
                   Address
                 </label>
+
                 <input
                   type="text"
                   value={form.address || ""}
-                  onChange={(e) =>
-                    setForm({ ...form, address: e.target.value })
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      address: event.target.value,
+                    })
                   }
                   placeholder="Enter school address"
                   className={inputCls}
                 />
               </div>
+
+              {/* Form Buttons */}
 
               <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
                 <button
@@ -501,7 +559,12 @@ export const Schools: React.FC = () => {
                 >
                   Cancel
                 </button>
-                <button type="submit" disabled={saving} className={darkBtn}>
+
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className={darkBtn}
+                >
                   {saving
                     ? "Saving..."
                     : editingSchool

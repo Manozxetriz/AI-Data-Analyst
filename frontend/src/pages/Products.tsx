@@ -286,7 +286,7 @@ export const Products: React.FC<ProductsProps> = ({
         data={filteredProducts}
         columns={columns}
         keyExtractor={(product) => product.id.toString()}
-        pageSize={8}
+        pageSize={10}
         isLoading={isLoading}
         emptyMessage="No products found."
         externalSearchQuery={searchQuery}

@@ -213,7 +213,7 @@ export const Sales: React.FC<SalesProps> = ({ searchQuery = "" }) => {
         data={filteredSales}
         columns={columns}
         keyExtractor={(sale) => sale.id.toString()}
-        pageSize={8}
+        pageSize={10}
         isLoading={isLoading}
         emptyMessage="No sales found."
         externalSearchQuery={searchQuery}
