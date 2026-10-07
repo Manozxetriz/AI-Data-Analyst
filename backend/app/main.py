@@ -5,6 +5,12 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from app.routers import schools
 from app.routers import products
 from app.routers import sales
+from app.routers import stock_transactions
+from app.routers import suppliers
+from app.routers import inventory
+from app.routers import sale_items
+from app.routers import customers
+from app.routers import expenses
 from app.routers.auth import router as auth_router
 
 
@@ -18,6 +24,13 @@ app.include_router(schools.router)
 app.include_router(products.router)
 app.include_router(sales.router)
 app.include_router(auth_router)
+app.include_router(stock_transactions.router)
+app.include_router(suppliers.router)
+app.include_router(inventory.router)
+app.include_router(sale_items.router)
+app.include_router(customers.router)
+app.include_router(expenses.router)
+
 
 
 app.add_middleware(

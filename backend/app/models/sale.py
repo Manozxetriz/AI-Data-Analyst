@@ -1,49 +1,108 @@
-from datetime import date
-from decimal import Decimal
-from typing import TYPE_CHECKING
+from datetime import date, datetime
 
-from sqlalchemy import Date, ForeignKey, Numeric, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import (
+    Column,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+)
+
+from sqlalchemy.orm import relationship
 
 from app.core.database import Base
-if TYPE_CHECKING:
-    from app.models.products import Product
-    from app.models.Schools import School
+
 
 class Sale(Base):
     __tablename__ = "sales"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-
-    bill_no: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
     )
 
-    sale_date: Mapped[date] = mapped_column(
+    bill_no = Column(
+        String(100),
+        nullable=False,
+        index=True
+    )
+
+    sale_date = Column(
         Date,
-        nullable=False
+        nullable=False,
+        index=True
     )
 
-    school_id: Mapped[int] = mapped_column(
+    school_id = Column(
+        Integer,
         ForeignKey("schools.id"),
-        nullable=False
+        nullable=True,
+        index=True
     )
 
-    product_id: Mapped[int] = mapped_column(
-        ForeignKey("products.id"),
-        nullable=False
+    customer_id = Column(
+        Integer,
+        ForeignKey("customers.id"),
+        nullable=True,
+        index=True
     )
 
-    sales_price: Mapped[Decimal] = mapped_column(
+    subtotal = Column(
         Numeric(12, 2),
         nullable=False
     )
 
-    school: Mapped["School"] = relationship(
+    discount = Column(
+        Numeric(12, 2),
+        nullable=False,
+        default=0
+    )
+
+    tax = Column(
+        Numeric(12, 2),
+        nullable=False,
+        default=0
+    )
+
+    total = Column(
+        Numeric(12, 2),
+        nullable=False
+    )
+
+    payment_status = Column(
+        String(30),
+        nullable=False,
+        default="PAID"
+    )
+
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow
+    )
+
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
+    )
+
+    school = relationship(
+        "School",
         back_populates="sales"
     )
 
-    product: Mapped["Product"] = relationship(
+    customer = relationship(
+        "Customer",
         back_populates="sales"
+    )
+
+    items = relationship(
+        "SaleItem",
+        back_populates="sale",
+        cascade="all, delete-orphan"
     )

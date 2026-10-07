@@ -3,7 +3,9 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_user
+
 from app.models.sale import Sale
+
 from app.Schemas.sales import (
     SaleCreate,
     SaleUpdate,
@@ -18,7 +20,6 @@ router = APIRouter(
 )
 
 
-# CREATE
 @router.post(
     "/",
     response_model=SaleResponse,
@@ -31,9 +32,16 @@ def create_sale(
     new_sale = Sale(
         bill_no=sale.bill_no,
         sale_date=sale.sale_date,
+
         school_id=sale.school_id,
-        product_id=sale.product_id,
-        sales_price=sale.sales_price
+        customer_id=sale.customer_id,
+
+        subtotal=sale.subtotal,
+        discount=sale.discount,
+        tax=sale.tax,
+        total=sale.total,
+
+        payment_status=sale.payment_status,
     )
 
     db.add(new_sale)
@@ -43,7 +51,6 @@ def create_sale(
     return new_sale
 
 
-# READ ALL
 @router.get(
     "/",
     response_model=list[SaleResponse]
@@ -54,7 +61,6 @@ def get_sales(
     return db.query(Sale).all()
 
 
-# READ ONE
 @router.get(
     "/{sale_id}",
     response_model=SaleResponse
@@ -63,9 +69,11 @@ def get_sale(
     sale_id: int,
     db: Session = Depends(get_db)
 ):
-    sale = db.query(Sale).filter(
-        Sale.id == sale_id
-    ).first()
+    sale = (
+        db.query(Sale)
+        .filter(Sale.id == sale_id)
+        .first()
+    )
 
     if not sale:
         raise HTTPException(
@@ -76,7 +84,6 @@ def get_sale(
     return sale
 
 
-# UPDATE
 @router.put(
     "/{sale_id}",
     response_model=SaleResponse
@@ -86,9 +93,11 @@ def update_sale(
     sale_data: SaleUpdate,
     db: Session = Depends(get_db)
 ):
-    sale = db.query(Sale).filter(
-        Sale.id == sale_id
-    ).first()
+    sale = (
+        db.query(Sale)
+        .filter(Sale.id == sale_id)
+        .first()
+    )
 
     if not sale:
         raise HTTPException(
@@ -105,11 +114,23 @@ def update_sale(
     if sale_data.school_id is not None:
         sale.school_id = sale_data.school_id
 
-    if sale_data.product_id is not None:
-        sale.product_id = sale_data.product_id
+    if sale_data.customer_id is not None:
+        sale.customer_id = sale_data.customer_id
 
-    if sale_data.sales_price is not None:
-        sale.sales_price = sale_data.sales_price
+    if sale_data.subtotal is not None:
+        sale.subtotal = sale_data.subtotal
+
+    if sale_data.discount is not None:
+        sale.discount = sale_data.discount
+
+    if sale_data.tax is not None:
+        sale.tax = sale_data.tax
+
+    if sale_data.total is not None:
+        sale.total = sale_data.total
+
+    if sale_data.payment_status is not None:
+        sale.payment_status = sale_data.payment_status
 
     db.commit()
     db.refresh(sale)
@@ -117,7 +138,6 @@ def update_sale(
     return sale
 
 
-# DELETE
 @router.delete(
     "/{sale_id}",
     status_code=status.HTTP_204_NO_CONTENT
@@ -126,9 +146,11 @@ def delete_sale(
     sale_id: int,
     db: Session = Depends(get_db)
 ):
-    sale = db.query(Sale).filter(
-        Sale.id == sale_id
-    ).first()
+    sale = (
+        db.query(Sale)
+        .filter(Sale.id == sale_id)
+        .first()
+    )
 
     if not sale:
         raise HTTPException(

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.Schools import School
+
 from app.Schemas.schools import (
     SchoolCreate,
     SchoolUpdate,
@@ -18,7 +19,6 @@ router = APIRouter(
 )
 
 
-# CREATE
 @router.post(
     "/",
     response_model=SchoolResponse,
@@ -39,8 +39,6 @@ def create_school(
 
     return new_school
 
-
-# READ ALL
 @router.get(
     "/",
     response_model=list[SchoolResponse]
@@ -51,7 +49,6 @@ def get_schools(
     return db.query(School).all()
 
 
-# READ ONE
 @router.get(
     "/{school_id}",
     response_model=SchoolResponse
@@ -60,9 +57,11 @@ def get_school(
     school_id: int,
     db: Session = Depends(get_db)
 ):
-    school = db.query(School).filter(
-        School.id == school_id
-    ).first()
+    school = (
+        db.query(School)
+        .filter(School.id == school_id)
+        .first()
+    )
 
     if not school:
         raise HTTPException(
@@ -72,8 +71,6 @@ def get_school(
 
     return school
 
-
-# UPDATE
 @router.put(
     "/{school_id}",
     response_model=SchoolResponse
@@ -83,9 +80,11 @@ def update_school(
     school_data: SchoolUpdate,
     db: Session = Depends(get_db)
 ):
-    school = db.query(School).filter(
-        School.id == school_id
-    ).first()
+    school = (
+        db.query(School)
+        .filter(School.id == school_id)
+        .first()
+    )
 
     if not school:
         raise HTTPException(
@@ -99,13 +98,15 @@ def update_school(
     if school_data.address is not None:
         school.address = school_data.address
 
+    if school_data.is_active is not None:
+        school.is_active = school_data.is_active
+
     db.commit()
     db.refresh(school)
 
     return school
 
 
-# DELETE
 @router.delete(
     "/{school_id}",
     status_code=status.HTTP_204_NO_CONTENT
@@ -114,9 +115,11 @@ def delete_school(
     school_id: int,
     db: Session = Depends(get_db)
 ):
-    school = db.query(School).filter(
-        School.id == school_id
-    ).first()
+    school = (
+        db.query(School)
+        .filter(School.id == school_id)
+        .first()
+    )
 
     if not school:
         raise HTTPException(

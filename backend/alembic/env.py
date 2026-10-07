@@ -24,7 +24,12 @@ from app.models.products import Product
 from app.models.Schools import School
 from app.models.sale import Sale
 from app.models.Users import User
-
+from app.models.sale_items import SaleItem
+from app.models.suppliers import Supplier
+from app.models.inventory import Inventory
+from app.models.stock_transactions import StockTransaction
+from app.models.expenses import Expense
+from app.models.Customers import Customer
 target_metadata = Base.metadata
 # Base.metadata
 

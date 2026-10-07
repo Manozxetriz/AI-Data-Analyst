@@ -3,7 +3,9 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_user
+
 from app.models.products import Product
+
 from app.Schemas.products import (
     ProductCreate,
     ProductUpdate,
@@ -18,7 +20,6 @@ router = APIRouter(
 )
 
 
-# CREATE
 @router.post(
     "/",
     response_model=ProductResponse,
@@ -31,7 +32,8 @@ def create_product(
     new_product = Product(
         name=product.name,
         cost_price=product.cost_price,
-        selling_price=product.selling_price
+        selling_price=product.selling_price,
+        supplier_id=product.supplier_id
     )
 
     db.add(new_product)
@@ -41,7 +43,6 @@ def create_product(
     return new_product
 
 
-# READ ALL
 @router.get(
     "/",
     response_model=list[ProductResponse]
@@ -52,7 +53,6 @@ def get_products(
     return db.query(Product).all()
 
 
-# READ ONE
 @router.get(
     "/{product_id}",
     response_model=ProductResponse
@@ -61,9 +61,11 @@ def get_product(
     product_id: int,
     db: Session = Depends(get_db)
 ):
-    product = db.query(Product).filter(
-        Product.id == product_id
-    ).first()
+    product = (
+        db.query(Product)
+        .filter(Product.id == product_id)
+        .first()
+    )
 
     if not product:
         raise HTTPException(
@@ -73,8 +75,6 @@ def get_product(
 
     return product
 
-
-# UPDATE
 @router.put(
     "/{product_id}",
     response_model=ProductResponse
@@ -84,9 +84,11 @@ def update_product(
     product_data: ProductUpdate,
     db: Session = Depends(get_db)
 ):
-    product = db.query(Product).filter(
-        Product.id == product_id
-    ).first()
+    product = (
+        db.query(Product)
+        .filter(Product.id == product_id)
+        .first()
+    )
 
     if not product:
         raise HTTPException(
@@ -103,13 +105,18 @@ def update_product(
     if product_data.selling_price is not None:
         product.selling_price = product_data.selling_price
 
+    if product_data.supplier_id is not None:
+        product.supplier_id = product_data.supplier_id
+
+    if product_data.is_active is not None:
+        product.is_active = product_data.is_active
+
     db.commit()
     db.refresh(product)
 
     return product
 
 
-# DELETE
 @router.delete(
     "/{product_id}",
     status_code=status.HTTP_204_NO_CONTENT
@@ -118,9 +125,11 @@ def delete_product(
     product_id: int,
     db: Session = Depends(get_db)
 ):
-    product = db.query(Product).filter(
-        Product.id == product_id
-    ).first()
+    product = (
+        db.query(Product)
+        .filter(Product.id == product_id)
+        .first()
+    )
 
     if not product:
         raise HTTPException(

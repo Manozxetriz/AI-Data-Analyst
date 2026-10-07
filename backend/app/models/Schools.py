@@ -1,4 +1,6 @@
-from sqlalchemy import String
+from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -20,7 +22,24 @@ class School(Base):
         String(300),
         nullable=True
     )
+    is_active = Column(
+        Boolean,
+        nullable=False,
+        default=True
+    )
 
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow
+    )
+
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
+    )
     sales: Mapped[list["Sale"]] = relationship(
         back_populates="school"
     )
