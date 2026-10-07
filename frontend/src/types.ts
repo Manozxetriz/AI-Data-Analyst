@@ -101,3 +101,11 @@ export interface AIAnalysisInsight {
     direction: 'positive' | 'negative' | 'neutral';
   };
 }
+
+export interface ChartDataPoint {
+  date: string;
+  revenue: number;
+  institutions: number;
+  units: number;
+  margin: number;
+}

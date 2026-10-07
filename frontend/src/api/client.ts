@@ -1,5 +1,7 @@
 const API_URL = import.meta.env.VITE_API_BASE_URL;
 
+let isRedirecting = false;
+
 export async function apiFetch(
   endpoint: string,
   options: RequestInit = {}
@@ -19,11 +21,18 @@ export async function apiFetch(
     headers,
   });
 
-  // JWT expired, remove token and redirect to login page
+  // JWT expired / invalid
   if (response.status === 401) {
-    localStorage.removeItem("access_token");
+    if (!isRedirecting) {
+      isRedirecting = true;
 
-    window.location.href = "/login";
+      // Remove expired authentication data
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("user");
+
+      // Tell App.tsx that authentication has expired
+      window.dispatchEvent(new Event("auth-expired"));
+    }
 
     throw new Error("Session expired. Please login again.");
   }

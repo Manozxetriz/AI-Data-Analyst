@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Sidebar } from "./components/SideBar.tsx";
 import { Header } from "./components/Header.tsx";
@@ -15,15 +15,30 @@ import type {
   ProductItem,
   EducationalInstitution,
   AgentRun,
-  AIAnalysisInsight,
-  ChartDataPoint,
+ 
 } from "./types.ts";
 
 export default function App() {
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
-    !!localStorage.getItem("access_token")
-  );
+  !!localStorage.getItem("access_token")
+);
+
+useEffect(() => {
+  const handleAuthExpired = () => {
+    setIsAuthenticated(false);
+
+    setCurrentPage("dashboard");
+    setSearchQuery("");
+  };
+
+  window.addEventListener("auth-expired", handleAuthExpired);
+
+  return () => {
+    window.removeEventListener("auth-expired", handleAuthExpired);
+  };
+}, []);
+
 
   const [currentPage, setCurrentPage] =
     useState<PageId>("dashboard");
@@ -44,26 +59,21 @@ export default function App() {
     useState(false);
 
   
-  const [transactions, setTransactions] =
+  const [transactions] =
     useState<SalesTransaction[]>([]);
 
-  const [products, setProducts] =
+  const [products] =
     useState<ProductItem[]>([]);
 
-  const [institutions, setInstitutions] =
+  const [institutions] =
     useState<EducationalInstitution[]>([]);
 
-  const [agentRuns, setAgentRuns] =
+  const [agentRuns] =
     useState<AgentRun[]>([]);
 
-  const [insights, setInsights] =
-    useState<AIAnalysisInsight[]>([]);
+ 
 
-  const [chartData, setChartData] =
-    useState<ChartDataPoint[]>([]);
-
-  const [isLoading, setIsLoading] =
-    useState(false);
+  
 
   
   const handleLoginSuccess = () => {
