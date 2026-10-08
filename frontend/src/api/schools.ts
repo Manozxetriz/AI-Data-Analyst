@@ -1,4 +1,9 @@
-import type { School, SchoolCreate } from "../types/school";
+import type {
+  School,
+  SchoolCreate,
+  SchoolUpdate,
+} from "../types/school";
+
 import { apiFetch } from "./client";
 
 export async function getSchools(): Promise<School[]> {
@@ -32,7 +37,7 @@ export async function createSchool(
 
 export async function updateSchool(
   id: number,
-  school: SchoolCreate
+  school: SchoolUpdate
 ): Promise<School> {
   const response = await apiFetch(`/api/schools/${id}`, {
     method: "PUT",
@@ -50,7 +55,9 @@ export async function updateSchool(
   return response.json();
 }
 
-export async function deleteSchool(id: number): Promise<void> {
+export async function deleteSchool(
+  id: number
+): Promise<void> {
   const response = await apiFetch(`/api/schools/${id}`, {
     method: "DELETE",
   });

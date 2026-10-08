@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from "react";
-import type { School, SchoolCreate } from "../types/school";
+import type {
+  School,
+  SchoolCreate,
+  SchoolUpdate,
+} from "../types/school";
+
 import {
   getSchools,
   createSchool,
   updateSchool,
   deleteSchool,
 } from "../api/schools";
+
 import { DataTable, type ColumnDef } from "../components/DataTable.tsx";
 
 /* ---------- Icons ---------- */
@@ -108,6 +114,8 @@ export const Schools: React.FC = () => {
     address: "",
   });
 
+  const [isActive, setIsActive] = useState(true);
+
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
@@ -135,10 +143,16 @@ export const Schools: React.FC = () => {
   /* ---------- Stats ---------- */
 
   const withAddress = schools.filter(
-    (school) => school.address?.trim()
+    (school) => Boolean(school.address?.trim())
   ).length;
 
   const missingAddress = schools.length - withAddress;
+
+  const activeSchools = schools.filter(
+    (school) => school.is_active
+  ).length;
+
+  const inactiveSchools = schools.length - activeSchools;
 
   /* ---------- Modal ---------- */
 
@@ -150,6 +164,7 @@ export const Schools: React.FC = () => {
       address: "",
     });
 
+    setIsActive(true);
     setShowModal(true);
   };
 
@@ -161,6 +176,7 @@ export const Schools: React.FC = () => {
       address: school.address || "",
     });
 
+    setIsActive(school.is_active);
     setShowModal(true);
   };
 
@@ -174,6 +190,8 @@ export const Schools: React.FC = () => {
       name: "",
       address: "",
     });
+
+    setIsActive(true);
   };
 
   /* ---------- Create / Update ---------- */
@@ -181,16 +199,24 @@ export const Schools: React.FC = () => {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!form.name.trim()) return;
+    if (!form.name.trim()) {
+      return;
+    }
 
     try {
       setSaving(true);
       setError("");
 
       if (editingSchool) {
+        const updateData: SchoolUpdate = {
+          name: form.name.trim(),
+          address: form.address?.trim() || null,
+          is_active: isActive,
+        };
+
         const updated = await updateSchool(
           editingSchool.id,
-          form
+          updateData
         );
 
         setSchools((current) =>
@@ -199,7 +225,12 @@ export const Schools: React.FC = () => {
           )
         );
       } else {
-        const created = await createSchool(form);
+        const createData: SchoolCreate = {
+          name: form.name.trim(),
+          address: form.address?.trim() || null,
+        };
+
+        const created = await createSchool(createData);
 
         setSchools((current) => [
           ...current,
@@ -218,6 +249,37 @@ export const Schools: React.FC = () => {
       );
     } finally {
       setSaving(false);
+    }
+  };
+
+  /* ---------- Toggle Active Status ---------- */
+
+  const handleToggleStatus = async (school: School) => {
+    try {
+      setError("");
+
+      const updateData: SchoolUpdate = {
+        is_active: !school.is_active,
+      };
+
+      const updated = await updateSchool(
+        school.id,
+        updateData
+      );
+
+      setSchools((current) =>
+        current.map((item) =>
+          item.id === updated.id ? updated : item
+        )
+      );
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to update school status."
+      );
     }
   };
 
@@ -304,13 +366,55 @@ export const Schools: React.FC = () => {
     },
 
     {
+      key: "is_active",
+      header: "Status",
+      sortable: true,
+      accessor: (school) => (
+        <button
+          type="button"
+          onClick={() => handleToggleStatus(school)}
+          className={
+            school.is_active
+              ? "inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 hover:bg-emerald-100"
+              : "inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500 hover:bg-slate-200"
+          }
+        >
+          <span
+            className={
+              school.is_active
+                ? "mr-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500"
+                : "mr-1.5 h-1.5 w-1.5 rounded-full bg-slate-400"
+            }
+          />
+
+          {school.is_active ? "Active" : "Inactive"}
+        </button>
+      ),
+    },
+
+    {
+      key: "created_at",
+      header: "Created",
+      sortable: true,
+      accessor: (school) => (
+        <span className="text-xs text-slate-500">
+          {new Date(
+            school.created_at
+          ).toLocaleDateString()}
+        </span>
+      ),
+    },
+
+    {
       key: "actions",
       header: "Actions",
       align: "right",
       accessor: (school) => (
         <div
           className="flex justify-end gap-2"
-          onClick={(event) => event.stopPropagation()}
+          onClick={(event) =>
+            event.stopPropagation()
+          }
         >
           <button
             type="button"
@@ -405,23 +509,15 @@ export const Schools: React.FC = () => {
         />
 
         <StatCard
-          label="Registry Status"
+          label="Active Schools"
           value={
-            error
-              ? "Error"
-              : loading
-              ? "Syncing"
-              : "Online"
+            loading
+              ? "—"
+              : String(activeSchools)
           }
           icon={<PulseIcon />}
-          foot={
-            error
-              ? "Request failed"
-              : "Connected API"
-          }
-          footRight={`State: ${
-            error ? "Fault" : "Nominal"
-          }`}
+          foot={`${inactiveSchools} Inactive`}
+          footRight="Registry status"
         />
       </section>
 
@@ -450,7 +546,8 @@ export const Schools: React.FC = () => {
         isLoading={loading}
         emptyMessage="No schools found."
         searchFilter={(school, searchQuery) => {
-          const query = searchQuery.toLowerCase();
+          const query =
+            searchQuery.toLowerCase();
 
           return (
             school.name
@@ -461,7 +558,11 @@ export const Schools: React.FC = () => {
               .includes(query) ||
             school.id
               .toString()
-              .includes(query)
+              .includes(query) ||
+            (school.is_active
+              ? "active"
+              : "inactive"
+            ).includes(query)
           );
         }}
       />
@@ -471,6 +572,7 @@ export const Schools: React.FC = () => {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
           <div className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-xl">
+
             {/* Modal Header */}
 
             <div className="mb-5 flex items-start justify-between">
@@ -505,6 +607,7 @@ export const Schools: React.FC = () => {
               onSubmit={handleSubmit}
               className="space-y-4"
             >
+
               {/* School Name */}
 
               <div>
@@ -548,6 +651,42 @@ export const Schools: React.FC = () => {
                 />
               </div>
 
+              {/* Status */}
+
+              {editingSchool && (
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-700">
+                    Status
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setIsActive(
+                        (current) => !current
+                      )
+                    }
+                    className={
+                      isActive
+                        ? "inline-flex items-center rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                        : "inline-flex items-center rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200"
+                    }
+                  >
+                    <span
+                      className={
+                        isActive
+                          ? "mr-2 h-2 w-2 rounded-full bg-emerald-500"
+                          : "mr-2 h-2 w-2 rounded-full bg-slate-400"
+                      }
+                    />
+
+                    {isActive
+                      ? "Active"
+                      : "Inactive"}
+                  </button>
+                </div>
+              )}
+
               {/* Form Buttons */}
 
               <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
@@ -572,6 +711,7 @@ export const Schools: React.FC = () => {
                     : "Add School"}
                 </button>
               </div>
+
             </form>
           </div>
         </div>

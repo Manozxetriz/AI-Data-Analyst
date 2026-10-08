@@ -1,7 +1,9 @@
 import type {
   Sale,
   SaleCreate,
+  SaleUpdate,
 } from "../types/sale";
+
 import { apiFetch } from "./client";
 
 export async function getSales(): Promise<Sale[]> {
@@ -35,7 +37,7 @@ export async function createSale(
 
 export async function updateSale(
   id: number,
-  sale: SaleCreate
+  sale: SaleUpdate
 ): Promise<Sale> {
   const response = await apiFetch(`/api/sales/${id}`, {
     method: "PUT",
@@ -53,7 +55,9 @@ export async function updateSale(
   return response.json();
 }
 
-export async function deleteSale(id: number): Promise<void> {
+export async function deleteSale(
+  id: number
+): Promise<void> {
   const response = await apiFetch(`/api/sales/${id}`, {
     method: "DELETE",
   });

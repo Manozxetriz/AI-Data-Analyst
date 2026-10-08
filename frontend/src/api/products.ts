@@ -1,7 +1,9 @@
 import type {
   Product,
   ProductCreate,
+  ProductUpdate,
 } from "../types/product";
+
 import { apiFetch } from "./client";
 
 export async function getProducts(): Promise<Product[]> {
@@ -32,9 +34,10 @@ export async function createProduct(
 
   return response.json();
 }
+
 export async function updateProduct(
   id: number,
-  product: ProductCreate
+  product: ProductUpdate
 ): Promise<Product> {
   const response = await apiFetch(`/api/products/${id}`, {
     method: "PUT",
@@ -52,7 +55,9 @@ export async function updateProduct(
   return response.json();
 }
 
-export async function deleteProduct(id: number): Promise<void> {
+export async function deleteProduct(
+  id: number
+): Promise<void> {
   const response = await apiFetch(`/api/products/${id}`, {
     method: "DELETE",
   });
